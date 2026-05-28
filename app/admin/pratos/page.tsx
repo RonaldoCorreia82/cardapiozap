@@ -1,5 +1,7 @@
 'use client'
 
+export const dynamic = 'force-dynamic'
+
 import { useEffect, useState, useRef, type ChangeEvent, type FormEvent } from 'react'
 import Image from 'next/image'
 import { criarClienteNavegador } from '@/lib/supabase'
