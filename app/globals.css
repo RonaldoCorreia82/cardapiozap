@@ -1,0 +1,13 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Remove outline padrão do navegador nos elementos focáveis — usamos focus:ring via Tailwind */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Scroll suave para navegação por âncoras de categoria */
+html {
+  scroll-behavior: smooth;
+}

@@ -1,0 +1,176 @@
+# Prompt — SaaS de Cardápio Digital para Restaurantes (MVP Simples)
+> Para usar no Claude Cowork. Cole este prompt exatamente como está.
+
+---
+
+## PAPEL
+
+Você é um engenheiro de software full-stack sênior especializado em construir SaaS para pequenos negócios no Brasil. Você tem experiência prática com Next.js 14, Supabase e Tailwind CSS. Você escreve código limpo, funcional e bem comentado em português.
+
+---
+
+## CONTEXTO
+
+Estou construindo um SaaS chamado **CardápioZap** para restaurantes, lanchonetes e marmitarias de cidades do interior do Brasil (começando em Seabra-BA, 40 mil habitantes).
+
+**O problema que resolve:** restaurantes locais usam papel ou WhatsApp manual para anotar pedidos de mesa. Com o CardápioZap, o cliente escaneia um QR code na mesa, vê o cardápio digital com fotos e descrições, monta o carrinho e clica em "Fazer pedido" — esse botão abre o WhatsApp com a mensagem já formatada, pronta para enviar ao número do restaurante.
+
+**Como o envio funciona (simples, sem servidor):**
+O botão "Fazer pedido" gera um link `https://wa.me/[numero]?text=[mensagem_codificada]` e abre no WhatsApp do cliente. O cliente confirma o envio com um toque. Não há backend de mensagens — zero infraestrutura extra.
+
+**Stack definida:**
+- Frontend: Next.js 14 (App Router) + Tailwind CSS
+- Banco de dados: Supabase (PostgreSQL + Storage para fotos)
+- WhatsApp: link `wa.me` nativo — sem Evolution API, sem servidor de mensagens
+- Deploy: Vercel (frontend apenas)
+- Pagamentos: Stripe ou Pagar.me (fase futura)
+
+**O que NÃO faz neste MVP:**
+- Não envia mensagem automaticamente por servidor
+- Não usa API da Anthropic (recurso de IA será adicionado em versão futura)
+- Não processa pagamentos
+
+**Modelo de negócio:** assinatura mensal por restaurante. Plano Básico: R$ 97/mês.
+
+**Usuários do sistema:**
+1. **Dono do restaurante** — acessa painel admin para cadastrar pratos, ver pedidos registrados, gerar QR codes
+2. **Cliente final** — acessa cardápio pelo QR code, monta carrinho e envia pedido pelo próprio WhatsApp
+3. **Você (fundador)** — acessa painel master para gerenciar todos os restaurantes cadastrados
+
+---
+
+## TAREFA
+
+Construa o MVP completo do CardápioZap, entregando os arquivos funcionais prontos para rodar localmente e fazer deploy na Vercel.
+
+---
+
+## ESCOPO DO MVP (entregue nesta ordem)
+
+### Fase 1 — Estrutura e banco de dados
+1. Schema SQL completo do Supabase com as tabelas:
+   - `restaurantes` (id, nome, slug, whatsapp, logo_url, plano, ativo, created_at)
+   - `categorias` (id, restaurante_id, nome, ordem)
+   - `pratos` (id, categoria_id, restaurante_id, nome, descricao, preco, foto_url, disponivel)
+   - `pedidos` (id, restaurante_id, mesa, itens jsonb, total, status, created_at)
+     — pedidos são salvos no Supabase apenas como registro histórico, após o cliente enviar pelo WhatsApp
+2. Políticas de Row Level Security (RLS) do Supabase
+
+### Fase 2 — Cardápio público (página do cliente)
+3. Página `/[slug]` — cardápio público do restaurante
+   - Header com logo e nome do restaurante
+   - Navegação por categorias (tabs ou âncoras)
+   - Lista de pratos com foto, nome, descrição e preço
+   - Carrinho flutuante com contador de itens e botão para abrir
+   - Drawer/modal do carrinho com lista de itens, quantidades e total
+   - Campo para número da mesa e campo de observação opcional
+   - Botão **"Fazer pedido pelo WhatsApp"** — ao clicar:
+     - Formata a mensagem com os itens, quantidades, total e observação
+     - Codifica com `encodeURIComponent`
+     - Abre `https://wa.me/55[whatsapp_restaurante]?text=[mensagem]` em nova aba
+     - Salva o pedido no Supabase via Server Action (registro histórico)
+
+4. Componente de carrinho com estado global usando Context API + useReducer
+5. Formatação da mensagem do WhatsApp (exatamente assim):
+```
+🍽️ *Novo Pedido — Mesa [X]*
+————————————
+2x Frango grelhado — R$ 38,00
+1x Suco de maracujá — R$ 9,00
+————————————
+*Total: R$ 47,00*
+📝 Obs: sem cebola
+```
+
+### Fase 3 — Painel admin do restaurante
+6. Auth com Supabase Auth (login por e-mail/senha)
+   - Página `/admin/login`
+   - Middleware de proteção de rotas `/admin/*`
+7. Dashboard `/admin`:
+   - Cards com: pedidos do dia, total faturado hoje, pratos cadastrados
+   - Lista dos últimos 10 pedidos com mesa, itens e horário
+8. CRUD completo de categorias em `/admin/categorias`:
+   - Criar, renomear, reordenar (drag or up/down buttons) e excluir
+9. CRUD completo de pratos em `/admin/pratos`:
+   - Criar e editar: nome, descrição (campo texto livre, sem IA neste MVP), preço, categoria, foto (upload para Supabase Storage), disponibilidade (toggle)
+   - Excluir prato com confirmação
+   - Pré-visualização da foto antes de salvar
+10. Gerador de QR Code em `/admin/qrcode`:
+    - Input para número da mesa
+    - QR code gerado em tempo real apontando para `https://[dominio]/[slug]?mesa=[numero]`
+    - Botão imprimir (abre janela de impressão com QR code grande e nome da mesa)
+    - Opção de baixar como PNG
+    - Biblioteca: `qrcode.react`
+11. Página de configurações `/admin/configuracoes`:
+    - Nome do restaurante, número do WhatsApp (com máscara), logo (upload), horário de funcionamento
+    - Ao salvar, atualiza tabela `restaurantes` no Supabase
+
+### Fase 4 — Server Action de registro de pedido
+12. Server Action `registrarPedido` em `app/actions/pedidos.ts`:
+    - Recebe: restaurante_id, mesa, itens[], total, observacao
+    - Salva na tabela `pedidos` com status `enviado`
+    - Retorna `{ sucesso: true }` ou `{ erro: string }`
+    - Chamada após o cliente clicar no botão — não bloqueia a abertura do WhatsApp
+
+---
+
+## INSTRUÇÕES DE DESENVOLVIMENTO
+
+- Use **TypeScript** em todos os arquivos — sem `any`
+- Crie `.env.local.example` com todas as variáveis necessárias
+- Comente em português trechos não óbvios
+- Use **Server Actions** do Next.js 14 — evite criar API routes desnecessárias
+- **Mobile-first obrigatório:** o cardápio público será usado 100% no celular
+- O cardápio deve ter **meta tags Open Graph** completas para quando o link for compartilhado no WhatsApp aparecer com imagem e nome do restaurante
+- Trate todos os erros com mensagens amigáveis em português
+- NÃO use bibliotecas de UI prontas (shadcn, MUI, Radix) — Tailwind puro
+- O número do WhatsApp deve aceitar formato com ou sem +55 e com ou sem espaços/traços — normalize antes de montar o link `wa.me`
+- A página do cardápio deve pré-preencher o campo "mesa" se a URL tiver o parâmetro `?mesa=X`
+
+---
+
+## FORMATO DE ENTREGA
+
+Para cada arquivo entregue, use este formato:
+
+```
+### 📁 [caminho/do/arquivo.ts]
+[código completo do arquivo]
+```
+
+Entregue os arquivos **nesta ordem exata**:
+1. `schema.sql` — schema completo do Supabase com RLS
+2. `lib/supabase.ts` — cliente Supabase (server e client)
+3. `lib/whatsapp.ts` — função que gera o link `wa.me` com mensagem formatada
+4. `lib/slug.ts` — função que converte nome em slug (ex: "Restaurante do João" → "restaurante-do-joao")
+5. `app/actions/pedidos.ts` — Server Action de registro de pedido
+6. `app/[slug]/page.tsx` — cardápio público (SSR)
+7. `app/[slug]/components/CarrinhoProvider.tsx` — Context + Reducer do carrinho
+8. `app/[slug]/components/CarrinhoDrawer.tsx` — drawer com itens e botão de pedido
+9. `app/[slug]/components/PratoCard.tsx` — card de prato com botão adicionar
+10. `app/admin/login/page.tsx` — página de login
+11. `middleware.ts` — proteção das rotas /admin
+12. `app/admin/page.tsx` — dashboard
+13. `app/admin/pratos/page.tsx` — CRUD de pratos
+14. `app/admin/categorias/page.tsx` — CRUD de categorias
+15. `app/admin/qrcode/page.tsx` — gerador de QR codes
+16. `app/admin/configuracoes/page.tsx` — configurações do restaurante
+17. `.env.local.example` — variáveis de ambiente comentadas
+18. `README.md` — setup local, variáveis, deploy na Vercel passo a passo
+
+---
+
+## RESTRIÇÕES
+
+- NÃO use Evolution API, Twilio, Z-API ou qualquer serviço de envio de WhatsApp
+- NÃO chame nenhuma API da Anthropic neste MVP
+- NÃO use `any` no TypeScript
+- NÃO armazene senhas ou tokens no banco — use apenas Supabase Auth
+- O botão "Fazer pedido" deve abrir o WhatsApp **mesmo que o registro no Supabase falhe** — o envio da mensagem não pode depender do banco
+- O cardápio público deve funcionar com SSR (não pode ser client-only)
+
+---
+
+## COMECE POR AQUI
+
+Inicie pelo `schema.sql`. Siga a ordem numerada acima. Ao terminar o arquivo 18, adicione um **checklist de deploy** com os passos para colocar em produção na Vercel conectando ao Supabase.
