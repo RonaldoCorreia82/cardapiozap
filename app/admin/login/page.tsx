@@ -18,23 +18,35 @@ export default function LoginPage() {
     setErro('')
     setCarregando(true)
 
-    const supabase = criarClienteNavegador()
+    try {
+      const supabase = criarClienteNavegador()
 
-    const { error } = await supabase.auth.signInWithPassword({
-      email: email.trim(),
-      password: senha,
-    })
+      const { error } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password: senha,
+      })
 
-    if (error) {
-      console.error('[Login] Erro Supabase:', error.message, error.status)
-      setErro('E-mail ou senha incorretos.')
+      if (error) {
+        console.error('[Login] Erro Supabase:', error.message, error.status)
+        if (error.message.includes('Invalid login')) {
+          setErro('E-mail ou senha incorretos.')
+        } else {
+          setErro(`Erro: ${error.message}`)
+        }
+        setCarregando(false)
+        return
+      }
+
+      // Navegação completa garante que o cookie de sessão
+      // seja enviado corretamente ao middleware
+      window.location.href = '/admin'
+
+    } catch (err: unknown) {
+      console.error('[Login] Exceção inesperada:', err)
+      const msg = err instanceof Error ? err.message : String(err)
+      setErro(`Erro de conexão: ${msg}`)
       setCarregando(false)
-      return
     }
-
-    // Navegação completa para garantir que o cookie de sessão
-    // seja enviado corretamente ao middleware antes de entrar no /admin
-    window.location.href = '/admin'
   }
 
   return (
