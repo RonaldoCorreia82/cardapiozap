@@ -10,13 +10,18 @@ import { NextResponse, type NextRequest } from 'next/server'
 //   público → acessa /[slug] sem autenticação
 // ============================================================
 export async function middleware(request: NextRequest) {
+  // Se as variáveis de ambiente não estiverem configuradas, passa sem autenticação
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+    return NextResponse.next()
+  }
+
   let response = NextResponse.next({
     request: { headers: request.headers },
   })
 
   const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    process.env.NEXT_PUBLIC_SUPABASE_URL,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
     {
       cookies: {
         get(name: string) {
