@@ -27,13 +27,14 @@ export default function LoginPage() {
 
     if (error) {
       console.error('[Login] Erro Supabase:', error.message, error.status)
-      setErro(`Erro: ${error.message}`)
+      setErro('E-mail ou senha incorretos.')
       setCarregando(false)
       return
     }
 
-    router.push('/admin')
-    router.refresh()
+    // Navegação completa para garantir que o cookie de sessão
+    // seja enviado corretamente ao middleware antes de entrar no /admin
+    window.location.href = '/admin'
   }
 
   return (
