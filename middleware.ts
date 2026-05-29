@@ -10,6 +10,10 @@ const SUPABASE_ANON_KEY =
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRrdXV3amdva2dhdmVpc2tmZHlqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5MTQxMzIsImV4cCI6MjA5NTQ5MDEzMn0.UMZyOZIduxW3LLXY8fNsLmJyHobtv1UxO0hgPMTe4ss'
 
+// E-mail do administrador geral (master)
+const MASTER_EMAIL =
+  process.env.MASTER_EMAIL || 'ronaldocorreia8206@gmail.com'
+
 // ============================================================
 // Middleware de autenticação e controle de acesso
 //
@@ -47,7 +51,7 @@ export async function middleware(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser()
   const { pathname } = request.nextUrl
-  const isMaster = user?.email === process.env.MASTER_EMAIL
+  const isMaster = user?.email === MASTER_EMAIL
 
   // ---- Página de login ----
   if (pathname === '/admin/login') {
