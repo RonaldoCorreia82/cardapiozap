@@ -40,10 +40,14 @@ export default function PratosPage() {
   const [erro, setErro] = useState('')
   const [fotoPreview, setFotoPreview] = useState<string | null>(null)
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
+  const [salvandoOrdem, setSalvandoOrdem] = useState(false)
+
+  // Drag-and-drop
+  const dragIndexRef = useRef<number | null>(null)
+  const [dragOver, setDragOver] = useState<number | null>(null)
 
   const inputFotoRef = useRef<HTMLInputElement>(null)
 
-  // Carrega restaurante e dados iniciais
   useEffect(() => {
     async function init() {
       const { data: { user } } = await supabase.auth.getUser()
@@ -69,7 +73,8 @@ export default function PratosPage() {
       .from('pratos')
       .select('*')
       .eq('restaurante_id', restId)
-      .order('nome')
+      .order('ordem', { ascending: true, nullsFirst: false })
+    // Fallback: se ordem for null em todos, mantém ordem do banco (nome)
     setPratos(data ?? [])
   }
 
@@ -82,6 +87,71 @@ export default function PratosPage() {
     setCategorias(data ?? [])
   }
 
+  // ============================================================
+  // Drag-and-drop handlers
+  // ============================================================
+  function handleDragStart(e: React.DragEvent, index: number) {
+    dragIndexRef.current = index
+    e.dataTransfer.effectAllowed = 'move'
+    // Deixa o item original um pouco transparente
+    setTimeout(() => {
+      const el = e.currentTarget as HTMLElement
+      el.style.opacity = '0.4'
+    }, 0)
+  }
+
+  function handleDragEnd(e: React.DragEvent) {
+    ;(e.currentTarget as HTMLElement).style.opacity = '1'
+    dragIndexRef.current = null
+    setDragOver(null)
+  }
+
+  function handleDragOver(e: React.DragEvent, index: number) {
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'move'
+    if (dragIndexRef.current !== index) {
+      setDragOver(index)
+    }
+  }
+
+  function handleDragLeave() {
+    setDragOver(null)
+  }
+
+  async function handleDrop(e: React.DragEvent, dropIndex: number) {
+    e.preventDefault()
+    const fromIndex = dragIndexRef.current
+    if (fromIndex === null || fromIndex === dropIndex) {
+      setDragOver(null)
+      return
+    }
+
+    // Reordena localmente
+    const nova = [...pratos]
+    const [movido] = nova.splice(fromIndex, 1)
+    nova.splice(dropIndex, 0, movido)
+
+    setPratos(nova)
+    setDragOver(null)
+    dragIndexRef.current = null
+
+    // Persiste no banco
+    await salvarOrdem(nova)
+  }
+
+  async function salvarOrdem(lista: Prato[]) {
+    setSalvandoOrdem(true)
+    await Promise.all(
+      lista.map((p, i) =>
+        supabase.from('pratos').update({ ordem: i }).eq('id', p.id)
+      )
+    )
+    setSalvandoOrdem(false)
+  }
+
+  // ============================================================
+  // Modal helpers
+  // ============================================================
   function abrirModalNovo() {
     setEditandoId(null)
     setForm(FORM_VAZIO)
@@ -117,10 +187,8 @@ export default function PratosPage() {
     const arquivo = e.target.files?.[0]
     if (!arquivo || !restauranteId) return
 
-    // Pré-visualização local imediata
     const urlLocal = URL.createObjectURL(arquivo)
     setFotoPreview(urlLocal)
-
     setUploadando(true)
 
     const extensao = arquivo.name.split('.').pop()
@@ -183,7 +251,11 @@ export default function PratosPage() {
         return
       }
     } else {
-      const { error } = await supabase.from('pratos').insert(payload)
+      // Novo prato recebe a última posição
+      const ordemNovo = pratos.length
+      const { error } = await supabase
+        .from('pratos')
+        .insert({ ...payload, ordem: ordemNovo })
       if (error) {
         setErro('Erro ao cadastrar prato. Tente novamente.')
         setCarregando(false)
@@ -199,8 +271,11 @@ export default function PratosPage() {
   async function handleDeletar(pratoId: string) {
     if (!restauranteId) return
     await supabase.from('pratos').delete().eq('id', pratoId)
-    setPratos((prev) => prev.filter((p) => p.id !== pratoId))
+    const nova = pratos.filter((p) => p.id !== pratoId)
+    setPratos(nova)
     setConfirmDeleteId(null)
+    // Reordena após remoção
+    await salvarOrdem(nova)
   }
 
   async function toggleDisponivel(prato: Prato) {
@@ -223,7 +298,17 @@ export default function PratosPage() {
       <AdminNav />
       <main className="max-w-3xl mx-auto px-4 py-6">
         <div className="flex items-center justify-between mb-6">
-          <h1 className="text-xl font-bold text-gray-900">Pratos</h1>
+          <div>
+            <h1 className="text-xl font-bold text-gray-900">Pratos</h1>
+            {pratos.length > 1 && (
+              <p className="text-xs text-gray-400 mt-0.5 flex items-center gap-1">
+                <span>⠿</span> Arraste para reordenar
+                {salvandoOrdem && (
+                  <span className="ml-1 text-green-600">• salvando...</span>
+                )}
+              </p>
+            )}
+          </div>
           <button
             onClick={abrirModalNovo}
             className="bg-green-600 hover:bg-green-700 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors"
@@ -232,31 +317,60 @@ export default function PratosPage() {
           </button>
         </div>
 
-        {/* Lista de pratos */}
+        {/* Lista de pratos com drag-and-drop */}
         {pratos.length === 0 ? (
           <div className="bg-white rounded-xl border border-gray-100 p-8 text-center text-gray-400 text-sm">
-            Nenhum prato cadastrado. Clique em "Novo prato" para começar.
+            Nenhum prato cadastrado. Clique em &quot;Novo prato&quot; para começar.
           </div>
         ) : (
-          <div className="flex flex-col gap-3">
-            {pratos.map((prato) => (
+          <div className="flex flex-col gap-2">
+            {pratos.map((prato, index) => (
               <div
                 key={prato.id}
-                className="bg-white rounded-xl border border-gray-100 flex items-center gap-3 p-3"
+                draggable
+                onDragStart={(e) => handleDragStart(e, index)}
+                onDragEnd={handleDragEnd}
+                onDragOver={(e) => handleDragOver(e, index)}
+                onDragLeave={handleDragLeave}
+                onDrop={(e) => handleDrop(e, index)}
+                className={`bg-white rounded-xl border flex items-center gap-3 p-3 transition-all duration-150 ${
+                  dragOver === index
+                    ? 'border-green-400 shadow-md scale-[1.01] bg-green-50'
+                    : 'border-gray-100'
+                }`}
               >
+                {/* Handle de arraste */}
+                <div
+                  className="cursor-grab active:cursor-grabbing text-gray-300 hover:text-gray-500 px-1 flex-shrink-0 select-none"
+                  title="Arraste para reordenar"
+                >
+                  <svg
+                    className="w-5 h-5"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <circle cx="7" cy="5" r="1.5" />
+                    <circle cx="13" cy="5" r="1.5" />
+                    <circle cx="7" cy="10" r="1.5" />
+                    <circle cx="13" cy="10" r="1.5" />
+                    <circle cx="7" cy="15" r="1.5" />
+                    <circle cx="13" cy="15" r="1.5" />
+                  </svg>
+                </div>
+
                 {/* Foto miniatura */}
                 {prato.foto_url ? (
-                  <div className="relative w-16 h-16 rounded-lg overflow-hidden flex-shrink-0">
+                  <div className="relative w-14 h-14 rounded-lg overflow-hidden flex-shrink-0">
                     <Image
                       src={prato.foto_url}
                       alt={prato.nome}
                       fill
                       className="object-cover"
-                      sizes="64px"
+                      sizes="56px"
                     />
                   </div>
                 ) : (
-                  <div className="w-16 h-16 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0 text-2xl">
+                  <div className="w-14 h-14 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0 text-xl">
                     🍽️
                   </div>
                 )}
@@ -277,18 +391,18 @@ export default function PratosPage() {
                 <button
                   onClick={() => toggleDisponivel(prato)}
                   title={prato.disponivel ? 'Marcar como indisponível' : 'Marcar como disponível'}
-                  className={`text-xs px-2 py-1 rounded-full font-medium transition-colors ${
+                  className={`text-xs px-2 py-1 rounded-full font-medium transition-colors flex-shrink-0 ${
                     prato.disponivel
                       ? 'bg-green-100 text-green-700 hover:bg-green-200'
                       : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
                   }`}
                 >
-                  {prato.disponivel ? 'Disponível' : 'Indisponível'}
+                  {prato.disponivel ? 'Disponível' : 'Indisp.'}
                 </button>
 
                 <button
                   onClick={() => abrirModalEditar(prato)}
-                  className="text-gray-400 hover:text-blue-600 p-1.5 rounded-lg hover:bg-blue-50 transition-colors"
+                  className="text-gray-400 hover:text-blue-600 p-1.5 rounded-lg hover:bg-blue-50 transition-colors flex-shrink-0"
                   aria-label="Editar prato"
                 >
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -297,7 +411,7 @@ export default function PratosPage() {
                 </button>
 
                 {confirmDeleteId === prato.id ? (
-                  <div className="flex items-center gap-1">
+                  <div className="flex items-center gap-1 flex-shrink-0">
                     <button
                       onClick={() => handleDeletar(prato.id)}
                       className="text-xs text-red-600 font-semibold hover:underline"
@@ -314,7 +428,7 @@ export default function PratosPage() {
                 ) : (
                   <button
                     onClick={() => setConfirmDeleteId(prato.id)}
-                    className="text-gray-400 hover:text-red-500 p-1.5 rounded-lg hover:bg-red-50 transition-colors"
+                    className="text-gray-400 hover:text-red-500 p-1.5 rounded-lg hover:bg-red-50 transition-colors flex-shrink-0"
                     aria-label="Excluir prato"
                   >
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -357,7 +471,6 @@ export default function PratosPage() {
                   Foto do prato
                 </label>
                 <div className="flex items-start gap-3">
-                  {/* Pré-visualização */}
                   <div className="relative w-24 h-24 rounded-xl overflow-hidden bg-gray-100 flex-shrink-0 flex items-center justify-center">
                     {fotoPreview ? (
                       <Image
@@ -518,7 +631,6 @@ export default function PratosPage() {
   )
 }
 
-// Nav reutilizada — componente local simples para evitar import circular
 function AdminNav() {
   const links = [
     { href: '/admin', label: 'Dashboard' },

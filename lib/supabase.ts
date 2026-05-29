@@ -38,6 +38,7 @@ export type Prato = {
   preco: number
   foto_url: string | null
   disponivel: boolean
+  ordem: number | null
   created_at: string
 }
 
