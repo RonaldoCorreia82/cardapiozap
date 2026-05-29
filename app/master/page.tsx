@@ -20,45 +20,54 @@ export default async function MasterPage() {
     redirect('/admin/login')
   }
 
-  const admin = criarClienteServico()
+  // Verifica se a service key está disponível
+  const serviceKeyDisponivel = !!process.env.SUPABASE_SERVICE_ROLE_KEY
 
-  // Todos os restaurantes (service role ignora RLS)
-  const { data: restaurantes } = await admin
-    .from('restaurantes')
-    .select('*')
-    .order('created_at', { ascending: false })
+  let lista: Restaurante[] = []
+  let pedidosHoje: number | null = 0
+  let totalPratos: number | null = 0
+  let pedidosPorRestaurante: Record<string, number> = {}
 
-  const lista: Restaurante[] = restaurantes ?? []
+  if (serviceKeyDisponivel) {
+    const admin = criarClienteServico()
 
-  // Stats gerais
-  const hoje = new Date()
-  hoje.setHours(0, 0, 0, 0)
+    const { data: restaurantes } = await admin
+      .from('restaurantes')
+      .select('*')
+      .order('created_at', { ascending: false })
 
-  const [
-    { count: pedidosHoje },
-    { count: totalPratos },
-    { data: todosPedidos },
-  ] = await Promise.all([
-    admin
-      .from('pedidos')
-      .select('id', { count: 'exact', head: true })
-      .gte('created_at', hoje.toISOString()),
-    admin
-      .from('pratos')
-      .select('id', { count: 'exact', head: true }),
-    admin
-      .from('pedidos')
-      .select('restaurante_id'),
-  ])
+    lista = restaurantes ?? []
 
-  // Contagem de pedidos por restaurante
-  const pedidosPorRestaurante = (todosPedidos ?? []).reduce<Record<string, number>>(
-    (acc, p) => {
-      acc[p.restaurante_id] = (acc[p.restaurante_id] ?? 0) + 1
-      return acc
-    },
-    {}
-  )
+    const hoje = new Date()
+    hoje.setHours(0, 0, 0, 0)
+
+    const [
+      { count: cPedidosHoje },
+      { count: cTotalPratos },
+      { data: todosPedidos },
+    ] = await Promise.all([
+      admin
+        .from('pedidos')
+        .select('id', { count: 'exact', head: true })
+        .gte('created_at', hoje.toISOString()),
+      admin
+        .from('pratos')
+        .select('id', { count: 'exact', head: true }),
+      admin
+        .from('pedidos')
+        .select('restaurante_id'),
+    ])
+
+    pedidosHoje = cPedidosHoje
+    totalPratos = cTotalPratos
+    pedidosPorRestaurante = (todosPedidos ?? []).reduce<Record<string, number>>(
+      (acc, p) => {
+        acc[p.restaurante_id] = (acc[p.restaurante_id] ?? 0) + 1
+        return acc
+      },
+      {}
+    )
+  }
 
   const ativos = lista.filter((r) => r.ativo).length
 
@@ -67,6 +76,14 @@ export default async function MasterPage() {
       <MasterNav />
 
       <main className="max-w-6xl mx-auto px-4 py-6">
+        {!serviceKeyDisponivel && (
+          <div className="mb-4 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-sm text-amber-800">
+            ⚠️ <strong>Configuração pendente:</strong> adicione a variável{' '}
+            <code className="bg-amber-100 px-1 rounded">SUPABASE_SERVICE_ROLE_KEY</code>{' '}
+            nas <strong>Settings → Environment Variables</strong> da Vercel e faça um novo deploy.
+            Sem ela os dados de restaurantes não são exibidos.
+          </div>
+        )}
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-xl font-bold text-gray-900">Visão Geral</h1>

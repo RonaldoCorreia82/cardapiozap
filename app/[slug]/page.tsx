@@ -76,20 +76,26 @@ export default async function CardapioPage({ params, searchParams }: Props) {
     .eq('restaurante_id', restaurante.id)
     .order('ordem', { ascending: true })
 
-  // Busca pratos disponíveis e banners em paralelo
-  const [{ data: pratos }, { data: bannersData }] = await Promise.all([
-    supabase
-      .from('pratos')
-      .select('*')
-      .eq('restaurante_id', restaurante.id)
-      .eq('disponivel', true)
-      .order('nome', { ascending: true }),
-    criarClienteServico()
+  // Busca pratos disponíveis
+  const { data: pratos } = await supabase
+    .from('pratos')
+    .select('*')
+    .eq('restaurante_id', restaurante.id)
+    .eq('disponivel', true)
+    .order('nome', { ascending: true })
+
+  // Busca banners (service role) — falha silenciosa se chave não configurada
+  let bannersData: Banner[] | null = null
+  try {
+    const { data } = await criarClienteServico()
       .from('banners')
       .select('*')
       .eq('ativo', true)
-      .order('posicao', { ascending: true }),
-  ])
+      .order('posicao', { ascending: true })
+    bannersData = data
+  } catch {
+    // SUPABASE_SERVICE_ROLE_KEY não configurada — banners desabilitados
+  }
 
   const categoriasList: Categoria[] = categorias ?? []
   const pratosList: Prato[] = pratos ?? []
