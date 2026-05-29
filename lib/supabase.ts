@@ -63,9 +63,15 @@ export type Pedido = {
 // Usa createBrowserClient do @supabase/ssr para sincronizar
 // a sessão via cookies — necessário para o middleware ler a sessão
 // ============================================================
+// URL e anon key são valores PÚBLICOS (seguro ter no código-fonte)
+const SUPABASE_URL =
+  process.env.NEXT_PUBLIC_SUPABASE_URL ||
+  'https://tkuuwjgokgaveiskfdyj.supabase.co'
+
+const SUPABASE_ANON_KEY =
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRrdXV3amdva2dhdmVpc2tmZHlqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5MTQxMzIsImV4cCI6MjA5NTQ5MDEzMn0.UMZyOZIduxW3LLXY8fNsLmJyHobtv1UxO0hgPMTe4ss'
+
 export function criarClienteNavegador() {
-  return createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  )
+  return createBrowserClient(SUPABASE_URL, SUPABASE_ANON_KEY)
 }
