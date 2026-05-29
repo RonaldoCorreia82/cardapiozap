@@ -8,12 +8,15 @@ import { MasterNav } from './components/MasterNav'
 import { ToggleAtivo } from './components/ToggleAtivo'
 import { BotaoDeletar } from './components/BotaoDeletar'
 
+const MASTER_EMAIL =
+  process.env.MASTER_EMAIL || 'ronaldocorreia8206@gmail.com'
+
 export default async function MasterPage() {
   const supabase = criarClienteServidor()
   const { data: { user } } = await supabase.auth.getUser()
 
   // Segurança: só o master admin acessa
-  if (!user || user.email !== process.env.MASTER_EMAIL) {
+  if (!user || user.email !== MASTER_EMAIL) {
     redirect('/admin/login')
   }
 
