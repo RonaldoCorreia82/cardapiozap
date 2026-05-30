@@ -9,6 +9,7 @@ import { AdminLayout } from '../page'
 import { NovaVendaForm } from './NovaVendaForm'
 import { BotaoDeletarVenda } from './BotaoDeletarVenda'
 import { FiltroData } from './FiltroData'
+import { FecharCaixa } from './FecharCaixa'
 import { formatarPreco } from '@/lib/whatsapp'
 
 type Props = { searchParams: { data?: string } }
@@ -22,7 +23,7 @@ export default async function VendasPage({ searchParams }: Props) {
 
   const { data: restaurante } = await supabase
     .from('restaurantes')
-    .select('plano')
+    .select('plano, nome')
     .eq('user_id', user.id)
     .single()
 
@@ -72,10 +73,19 @@ export default async function VendasPage({ searchParams }: Props) {
 
   return (
     <AdminLayout titulo="Controle de Vendas">
-      {/* Filtro de data */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+      {/* Filtro de data + ações */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
         <FiltroData dataAtual={dataFiltro} />
-        <NovaVendaForm />
+        <div className="flex items-center gap-2">
+          <NovaVendaForm />
+          <FecharCaixa
+            vendas={vendas}
+            totalDia={totalDia}
+            porFormaDia={porFormaDia}
+            data={dataFiltro}
+            nomeRestaurante={restaurante?.nome ?? 'Restaurante'}
+          />
+        </div>
       </div>
 
       {/* Cards do dia */}

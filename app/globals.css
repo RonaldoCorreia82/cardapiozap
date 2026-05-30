@@ -11,3 +11,13 @@
 html {
   scroll-behavior: smooth;
 }
+
+/* Impressão do fechamento de caixa */
+@media print {
+  body > *:not(.print-modal) {
+    display: none !important;
+  }
+  .print\:hidden {
+    display: none !important;
+  }
+}
