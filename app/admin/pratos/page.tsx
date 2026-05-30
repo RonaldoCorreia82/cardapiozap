@@ -7,6 +7,7 @@ import Image from 'next/image'
 import { criarClienteNavegador } from '@/lib/supabase'
 import type { Prato, Categoria } from '@/lib/supabase'
 import { formatarPreco } from '@/lib/whatsapp'
+import { AdminNav } from '@/app/admin/components/AdminNav'
 
 type FormPrato = {
   nome: string
@@ -628,35 +629,5 @@ export default function PratosPage() {
         </>
       )}
     </div>
-  )
-}
-
-function AdminNav() {
-  const links = [
-    { href: '/admin', label: 'Dashboard' },
-    { href: '/admin/pratos', label: 'Pratos' },
-    { href: '/admin/categorias', label: 'Categorias' },
-    { href: '/admin/qrcode', label: 'QR Code' },
-    { href: '/admin/configuracoes', label: 'Config' },
-  ]
-  return (
-    <nav className="bg-white border-b border-gray-100 sticky top-0 z-20">
-      <div className="max-w-3xl mx-auto px-4 h-14 flex items-center justify-between">
-        <a href="/admin" className="font-bold text-gray-900">
-          <span className="text-green-600">⚡</span> CardápioZap
-        </a>
-        <div className="flex items-center gap-1 overflow-x-auto">
-          {links.map((l) => (
-            <a
-              key={l.href}
-              href={l.href}
-              className="px-3 py-1.5 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors whitespace-nowrap"
-            >
-              {l.label}
-            </a>
-          ))}
-        </div>
-      </div>
-    </nav>
   )
 }

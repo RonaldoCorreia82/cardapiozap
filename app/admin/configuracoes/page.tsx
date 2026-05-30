@@ -6,6 +6,7 @@ import { useEffect, useState, useRef, type FormEvent, type ChangeEvent } from 'r
 import Image from 'next/image'
 import { criarClienteNavegador } from '@/lib/supabase'
 import type { Restaurante } from '@/lib/supabase'
+import { AdminNav } from '@/app/admin/components/AdminNav'
 import { gerarSlug } from '@/lib/slug'
 import { normalizarWhatsapp } from '@/lib/whatsapp'
 
@@ -193,14 +194,11 @@ export default function ConfiguracoesPage() {
     setCarregando(false)
   }
 
-  async function handleLogout() {
-    await supabase.auth.signOut()
-    window.location.href = '/admin/login'
-  }
+
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <AdminNav onLogout={handleLogout} />
+      <AdminNav />
       <main className="max-w-3xl mx-auto px-4 py-6">
         <h1 className="text-xl font-bold text-gray-900 mb-6">
           {primeroCadastro ? 'Configurar restaurante' : 'Configurações'}
@@ -436,40 +434,3 @@ export default function ConfiguracoesPage() {
   )
 }
 
-function AdminNav({ onLogout }: { onLogout: () => void }) {
-  const links = [
-    { href: '/admin', label: 'Dashboard' },
-    { href: '/admin/pratos', label: 'Pratos' },
-    { href: '/admin/categorias', label: 'Categorias' },
-    { href: '/admin/qrcode', label: 'QR Code' },
-    { href: '/admin/vendas', label: 'Vendas' },
-    { href: '/admin/fiados', label: 'Fiados' },
-    { href: '/admin/configuracoes', label: 'Config' },
-  ]
-  return (
-    <nav className="bg-white border-b border-gray-100 sticky top-0 z-20">
-      <div className="max-w-3xl mx-auto px-4 h-14 flex items-center justify-between">
-        <a href="/admin" className="font-bold text-gray-900">
-          <span className="text-green-600">⚡</span> CardápioZap
-        </a>
-        <div className="flex items-center gap-1 overflow-x-auto">
-          {links.map((l) => (
-            <a
-              key={l.href}
-              href={l.href}
-              className="px-3 py-1.5 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors whitespace-nowrap"
-            >
-              {l.label}
-            </a>
-          ))}
-          <button
-            onClick={onLogout}
-            className="px-3 py-1.5 text-sm text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors whitespace-nowrap"
-          >
-            Sair
-          </button>
-        </div>
-      </div>
-    </nav>
-  )
-}
