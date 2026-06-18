@@ -1,9 +1,17 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useCallback } from 'react'
 import { useCarrinho } from './CarrinhoProvider'
 import { gerarLinkWhatsapp, formatarPreco } from '@/lib/whatsapp'
 import { registrarPedido } from '@/app/actions/pedidos'
+
+const PIX_TIPO_LABEL: Record<string, string> = {
+  cpf: 'CPF',
+  cnpj: 'CNPJ',
+  email: 'E-mail',
+  telefone: 'Telefone',
+  aleatoria: 'Chave Aleatória',
+}
 
 type Props = {
   nomeRestaurante: string
@@ -26,11 +34,33 @@ export function CarrinhoDrawer({ nomeRestaurante }: Props) {
     itensPedido,
     restauranteId,
     whatsappRestaurante,
+    pixChave,
+    pixTipo,
   } = useCarrinho()
 
   const [enviando, setEnviando] = useState(false)
   const [erroMesa, setErroMesa] = useState('')
+  const [pixCopiado, setPixCopiado] = useState(false)
   const mesaRef = useRef<HTMLInputElement>(null)
+
+  const copiarPix = useCallback(async () => {
+    if (!pixChave) return
+    try {
+      await navigator.clipboard.writeText(pixChave)
+      setPixCopiado(true)
+      setTimeout(() => setPixCopiado(false), 2500)
+    } catch {
+      // Fallback para navegadores sem clipboard API
+      const el = document.createElement('textarea')
+      el.value = pixChave
+      document.body.appendChild(el)
+      el.select()
+      document.execCommand('copy')
+      document.body.removeChild(el)
+      setPixCopiado(true)
+      setTimeout(() => setPixCopiado(false), 2500)
+    }
+  }, [pixChave])
 
   // Foca no campo mesa ao abrir o drawer se estiver vazio
   useEffect(() => {
@@ -308,6 +338,50 @@ export function CarrinhoDrawer({ nomeRestaurante }: Props) {
                 className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-green-300"
               />
             </div>
+
+            {/* Copiar PIX */}
+            {pixChave && (
+              <div className="bg-blue-50 border border-blue-100 rounded-xl px-4 py-3">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-xs font-semibold text-blue-700 mb-0.5">
+                      Pagar via PIX
+                      {pixTipo && (
+                        <span className="ml-1.5 font-normal text-blue-500">
+                          · {PIX_TIPO_LABEL[pixTipo] ?? pixTipo}
+                        </span>
+                      )}
+                    </p>
+                    <p className="text-sm text-blue-900 font-mono truncate">{pixChave}</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={copiarPix}
+                    className={`flex-shrink-0 flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-lg transition-all ${
+                      pixCopiado
+                        ? 'bg-green-500 text-white'
+                        : 'bg-blue-600 hover:bg-blue-700 text-white'
+                    }`}
+                  >
+                    {pixCopiado ? (
+                      <>
+                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                        </svg>
+                        Copiado!
+                      </>
+                    ) : (
+                      <>
+                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                        </svg>
+                        Copiar
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            )}
 
             {/* Botão principal */}
             <button

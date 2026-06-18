@@ -18,6 +18,7 @@ export type Restaurante = {
   instagram: string | null
   taxa_entrega: number
   pix: string | null
+  pix_tipo: string | null
   created_at: string
 }
 

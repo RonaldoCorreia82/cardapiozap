@@ -60,6 +60,8 @@ type ContextoCarrinho = {
   whatsappRestaurante: string
   taxaEntrega: number
   hasBanners: boolean
+  pixChave: string | null
+  pixTipo: string | null
 }
 
 // ============================================================
@@ -149,6 +151,8 @@ type PropsProvider = {
   mesaInicial: string
   taxaEntrega: number
   hasBanners: boolean
+  pixChave: string | null
+  pixTipo: string | null
 }
 
 export function CarrinhoProvider({
@@ -158,6 +162,8 @@ export function CarrinhoProvider({
   mesaInicial,
   taxaEntrega,
   hasBanners,
+  pixChave,
+  pixTipo,
 }: PropsProvider) {
   const [estado, dispatch] = useReducer(reducerCarrinho, {
     itens: [],
@@ -237,6 +243,8 @@ export function CarrinhoProvider({
         whatsappRestaurante,
         taxaEntrega,
         hasBanners,
+        pixChave,
+        pixTipo,
       }}
     >
       {children}

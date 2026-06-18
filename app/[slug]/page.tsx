@@ -120,6 +120,8 @@ export default async function CardapioPage({ params, searchParams }: Props) {
       mesaInicial={mesaInicial}
       taxaEntrega={restaurante.taxa_entrega ?? 0}
       hasBanners={restaurante.plano === 'basico' && banners.length > 0}
+      pixChave={restaurante.pix ?? null}
+      pixTipo={restaurante.pix_tipo ?? null}
     >
       <div className="min-h-screen bg-gray-50">
         {/* Header */}

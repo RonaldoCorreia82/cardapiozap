@@ -10,6 +10,14 @@ import { AdminNav } from '@/app/admin/components/AdminNav'
 import { gerarSlug } from '@/lib/slug'
 import { normalizarWhatsapp } from '@/lib/whatsapp'
 
+const PIX_TIPOS = [
+  { valor: 'cpf', label: 'CPF' },
+  { valor: 'cnpj', label: 'CNPJ' },
+  { valor: 'email', label: 'E-mail' },
+  { valor: 'telefone', label: 'Telefone' },
+  { valor: 'aleatoria', label: 'Chave Aleatória' },
+]
+
 type FormConfig = {
   nome: string
   whatsapp: string
@@ -17,6 +25,7 @@ type FormConfig = {
   endereco: string
   taxa_entrega: string
   pix: string
+  pix_tipo: string
   instagram: string
   logo_url: string
   slug: string
@@ -33,6 +42,7 @@ export default function ConfiguracoesPage() {
     endereco: '',
     taxa_entrega: '',
     pix: '',
+    pix_tipo: 'cpf',
     instagram: '',
     logo_url: '',
     slug: '',
@@ -65,6 +75,7 @@ export default function ConfiguracoesPage() {
           endereco: rest.endereco ?? '',
           taxa_entrega: rest.taxa_entrega > 0 ? String(rest.taxa_entrega) : '',
           pix: rest.pix ?? '',
+          pix_tipo: rest.pix_tipo ?? 'cpf',
           instagram: rest.instagram ?? '',
           logo_url: rest.logo_url ?? '',
           slug: rest.slug,
@@ -156,6 +167,7 @@ export default function ConfiguracoesPage() {
       endereco: form.endereco.trim() || null,
       taxa_entrega: parseFloat(form.taxa_entrega.replace(',', '.')) || 0,
       pix: form.pix.trim() || null,
+      pix_tipo: form.pix.trim() ? form.pix_tipo : null,
       instagram: form.instagram.trim().replace(/^@/, '') || null,
       logo_url: form.logo_url || null,
       slug: form.slug.trim().toLowerCase(),
@@ -343,18 +355,47 @@ export default function ConfiguracoesPage() {
 
           {/* PIX */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
               Chave PIX
             </label>
+            {/* Tipo de chave */}
+            <div className="flex flex-wrap gap-2 mb-2">
+              {PIX_TIPOS.map((t) => (
+                <label
+                  key={t.valor}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-sm cursor-pointer transition-colors ${
+                    form.pix_tipo === t.valor
+                      ? 'bg-green-50 border-green-400 text-green-700 font-semibold'
+                      : 'border-gray-200 text-gray-600 hover:border-gray-300'
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="pix_tipo"
+                    value={t.valor}
+                    checked={form.pix_tipo === t.valor}
+                    onChange={() => setForm((p) => ({ ...p, pix_tipo: t.valor }))}
+                    className="sr-only"
+                  />
+                  {t.label}
+                </label>
+              ))}
+            </div>
             <input
               type="text"
               value={form.pix}
               onChange={(e) => setForm((p) => ({ ...p, pix: e.target.value }))}
               className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-300"
-              placeholder="CPF, CNPJ, e-mail, telefone ou chave aleatória"
+              placeholder={
+                form.pix_tipo === 'cpf' ? '000.000.000-00' :
+                form.pix_tipo === 'cnpj' ? '00.000.000/0000-00' :
+                form.pix_tipo === 'email' ? 'seu@email.com' :
+                form.pix_tipo === 'telefone' ? '+55 (00) 00000-0000' :
+                'Chave aleatória (UUID)'
+              }
             />
             <p className="text-xs text-gray-400 mt-1">
-              Exibida no cardápio para facilitar o pagamento do cliente.
+              Aparece com botão &quot;Copiar PIX&quot; no checkout do cardápio.
             </p>
           </div>
 
