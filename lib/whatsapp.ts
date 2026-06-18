@@ -28,14 +28,6 @@ export function formatarPreco(valor: number): string {
   })
 }
 
-const PIX_TIPO_LABEL: Record<string, string> = {
-  cpf: 'CPF',
-  cnpj: 'CNPJ',
-  email: 'E-mail',
-  telefone: 'Telefone',
-  aleatoria: 'Chave Aleatória',
-}
-
 // ============================================================
 // Monta a mensagem de pedido exatamente no formato especificado
 // ============================================================
@@ -46,9 +38,7 @@ export function montarMensagem(
   observacao?: string,
   entrega?: boolean,
   enderecoEntrega?: string,
-  taxaEntrega?: number,
-  pixChave?: string | null,
-  pixTipo?: string | null
+  taxaEntrega?: number
 ): string {
   const separador = '————————————'
 
@@ -73,9 +63,6 @@ export function montarMensagem(
   const linhaObs = observacao?.trim()
     ? `\nObs: ${observacao.trim()}`
     : ''
-  const linhaPix = pixChave?.trim()
-    ? `\n💳 PIX (${PIX_TIPO_LABEL[pixTipo ?? ''] ?? pixTipo ?? 'Chave'}): ${pixChave.trim()}`
-    : ''
 
   return (
     `*Novo Pedido — ${mesa}*\n` +
@@ -85,8 +72,7 @@ export function montarMensagem(
     `${separador}\n` +
     `*Total: ${formatarPreco(total)}*` +
     `${linhaEndereco}` +
-    `${linhaObs}` +
-    `${linhaPix}\n`
+    `${linhaObs}\n`
   )
 }
 
@@ -101,12 +87,10 @@ export function gerarLinkWhatsapp(
   observacao?: string,
   entrega?: boolean,
   enderecoEntrega?: string,
-  taxaEntrega?: number,
-  pixChave?: string | null,
-  pixTipo?: string | null
+  taxaEntrega?: number
 ): string {
   const numero = normalizarWhatsapp(whatsappRestaurante)
-  const mensagem = montarMensagem(mesa, itens, total, observacao, entrega, enderecoEntrega, taxaEntrega, pixChave, pixTipo)
+  const mensagem = montarMensagem(mesa, itens, total, observacao, entrega, enderecoEntrega, taxaEntrega)
   const textoCodificado = encodeURIComponent(mensagem)
 
   return `https://wa.me/${numero}?text=${textoCodificado}`
