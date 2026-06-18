@@ -3,16 +3,8 @@
 import { useCarrinho } from './CarrinhoProvider'
 import { formatarPreco } from '@/lib/whatsapp'
 
-const PIX_TIPO_LABEL: Record<string, string> = {
-  cpf: 'CPF',
-  cnpj: 'CNPJ',
-  email: 'E-mail',
-  telefone: 'Telefone',
-  aleatoria: 'Chave Aleatória',
-}
-
 export function CarrinhoBotaoFlutuante() {
-  const { totalItens, totalValor, abrirDrawer, hasBanners, pixChave, pixTipo } = useCarrinho()
+  const { totalItens, totalValor, abrirDrawer, hasBanners } = useCarrinho()
 
   if (totalItens === 0) return null
 
@@ -23,18 +15,11 @@ export function CarrinhoBotaoFlutuante() {
         className="w-full max-w-sm bg-green-600 hover:bg-green-700 active:bg-green-800 text-white font-bold py-3.5 px-5 rounded-2xl shadow-lg flex items-center justify-between transition-colors"
         aria-label="Abrir carrinho"
       >
-        <span className="flex flex-col items-start">
-          <span className="flex items-center gap-2">
-            <span className="bg-white text-green-600 text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
-              {totalItens}
-            </span>
-            Ver pedido
+        <span className="flex items-center gap-2">
+          <span className="bg-white text-green-600 text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+            {totalItens}
           </span>
-          {pixChave && (
-            <span className="text-green-200 text-[11px] font-normal mt-0.5">
-              💳 PIX · {PIX_TIPO_LABEL[pixTipo ?? ''] ?? pixTipo}
-            </span>
-          )}
+          Ver pedido
         </span>
         <span className="font-semibold">{formatarPreco(totalValor)}</span>
       </button>
