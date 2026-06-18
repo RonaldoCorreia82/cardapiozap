@@ -344,15 +344,15 @@ export function CarrinhoDrawer({ nomeRestaurante }: Props) {
               <div className="bg-blue-50 border border-blue-100 rounded-xl px-4 py-3">
                 <div className="flex items-center justify-between gap-3">
                   <div className="min-w-0">
-                    <p className="text-xs font-semibold text-blue-700 mb-0.5">
-                      Pagar via PIX
+                    <p className="text-xs font-semibold text-blue-700 mb-0.5">Pagar via PIX</p>
+                    <p className="text-sm text-blue-900 font-mono truncate">
                       {pixTipo && (
-                        <span className="ml-1.5 font-normal text-blue-500">
-                          · {PIX_TIPO_LABEL[pixTipo] ?? pixTipo}
+                        <span className="font-sans font-semibold text-blue-600 not-italic mr-1">
+                          {PIX_TIPO_LABEL[pixTipo] ?? pixTipo}:
                         </span>
                       )}
+                      {pixChave}
                     </p>
-                    <p className="text-sm text-blue-900 font-mono truncate">{pixChave}</p>
                   </div>
                   <button
                     type="button"
