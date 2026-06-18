@@ -102,7 +102,9 @@ export function CarrinhoDrawer({ nomeRestaurante }: Props) {
       estado.observacao,
       estado.entrega,
       estado.enderecoEntrega,
-      taxaEntrega
+      taxaEntrega,
+      pixChave,
+      pixTipo
     )
     window.open(link, '_blank')
 
